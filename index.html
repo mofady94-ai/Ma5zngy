@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة مخزن قطع الغيار</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="logo">
+      <span>📦</span>
+      <h1>مخزن قطع الغيار</h1>
+    </div>
+    <div class="header-controls">
+      <button class="theme-toggle-btn" id="themeToggleBtn" title="تغيير الوضع">🌙</button>
+      <div class="stats-badge" id="globalStats">0 موديل | 0 قطعة</div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- كروت الإحصائيات المصغرة -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">الموديلات</span>
+        <strong class="stat-value" id="statModels">0</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">الأنواع</span>
+        <strong class="stat-value" id="statParts">0</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">إجمالي المخزون</span>
+        <strong class="stat-value" id="statQty">0</strong>
+      </div>
+      <div class="stat-card alert-card" id="statAlertCard">
+        <span class="stat-label">رصيد منخفض</span>
+        <strong class="stat-value" id="statLowStock" style="color: #dc2626;">0</strong>
+      </div>
+    </section>
+
+    <!-- الأزرار العلوية المدمجة -->
+    <section class="actions">
+      <div class="action-buttons-row">
+        <button class="btn btn-primary" id="openAddModalBtn">➕ إضافة موديل</button>
+        <button class="btn btn-secondary" id="exportBtn">🖨️ تقرير PDF</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📤 استيراد</button>
+        <input type="file" id="importFile" accept=".json" style="display:none;">
+      </div>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="ابحث باسم الجهاز، قطعة الغيار، أو الكود (#1)...">
+        <button id="clearSearch" class="btn-clear" style="display: none;">✕</button>
+      </div>
+    </section>
+
+    <!-- سجل الحركات الأخيرة -->
+    <section class="logs-section">
+      <div class="logs-header" onclick="toggleLogs()">
+        <span>📋 سجل الحركات الأخيرة في المخزن</span>
+        <span id="logsToggleIcon">▼</span>
+      </div>
+      <div class="logs-content" id="logsContent">
+        <div id="logsList"><p class="no-logs">لا توجد حركات مسجلة حتى الآن</p></div>
+      </div>
+    </section>
+
+    <section id="modelsList" class="models-grid">
+      <!-- يتم عرض الموديلات والقطع هنا -->
+    </section>
+
+    <div id="emptyState" class="empty-state">
+      <div class="empty-icon">📂</div>
+      <h3>لا توجد بيانات حالياً</h3>
+      <p>قم بإضافة أول موديل جهاز للبدء في إدارة قطع الغيار</p>
+      <button class="btn btn-primary" onclick="document.getElementById('openAddModalBtn').click()">إضافة موديل جديد</button>
+    </div>
+  </main>
+
+  <!-- نافذة إضافة موديل -->
+  <div class="modal-overlay" id="modelModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modelModalTitle">إضافة موديل جهاز جديد</h3>
+        <button class="close-btn" id="closeModelModal">✕</button>
+      </div>
+      <form id="modelForm">
+        <input type="hidden" id="editModelId">
+        <div class="form-group">
+          <label for="modelName">اسم الموديل / الجهاز *</label>
+          <input type="text" id="modelName" placeholder="مثال: غسالة زانوسي 7 كيلو" required>
+        </div>
+        <div class="form-group">
+          <label for="modelImage">صورة الجهاز (اختياري)</label>
+          <input type="file" id="modelImage" accept="image/*" style="display:none;">
+          <button type="button" class="btn btn-secondary btn-block" onclick="document.getElementById('modelImage').click()">
+            📷 اختر صورة من الموبايل
+          </button>
+          <div id="imagePreview" class="image-preview" style="display:none;"></div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelModelBtn">إلغاء</button>
+          <button type="submit" class="btn btn-primary">حفظ الموديل</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- نافذة إضافة وتعديل قطعة غيار -->
+  <div class="modal-overlay" id="partModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="partModalTitle">إضافة قطعة غيار</h3>
+        <button class="close-btn" id="closePartModal">✕</button>
+      </div>
+      <form id="partForm">
+        <input type="hidden" id="targetModelId">
+        <input type="hidden" id="editPartId">
+        <div class="form-group">
+          <label for="partName">اسم القطعة *</label>
+          <input type="text" id="partName" placeholder="مثال: طلمبة طرد مياه" required>
+        </div>
+        <div class="form-group">
+          <label for="partCode">الكود الفريد *</label>
+          <input type="text" id="partCode" required>
+        </div>
+        <div class="form-group">
+          <label for="partQty">الكمية المتاحة بالمخزن *</label>
+          <input type="number" id="partQty" value="1" min="0" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelPartBtn">إلغاء</button>
+          <button type="submit" class="btn btn-primary">حفظ القطعة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
